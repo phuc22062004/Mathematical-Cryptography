@@ -31,3 +31,7 @@ using namespace std;
 // 5. Hien thi ket qua va xac minh rang bi mat trung khop
 
 //}
+
+int main() {
+    cout << "Hello World!" << "\n";
+}
