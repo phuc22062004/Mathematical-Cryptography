@@ -164,7 +164,7 @@ public:
         std::random_device rd;
         std::mt19937_64 gen(rd());
         std::uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
-
+        
         data.fill(0);
         int full_chunks = bit_size / 64;
         int remaining_bits = bit_size % 64;
@@ -375,10 +375,10 @@ BigUInt512 generateRandomPrime(int bit_size) {
 }
 
 int main() {
-    int bit_size = 512; // You can change this to any bit size you need
+    int bit_size = 64; // You can change this to any bit size you need
     BigUInt512 prime = generateRandomPrime(bit_size);
-    BigUInt512 g;
-    std::cout << "Random Number: " << g.toString() << std::endl;
+    //BigUInt512 g ;
+    //std::cout << "Random Number: " << g.toString() << std::endl;
     std::cout << "Random Prime Number: " << prime.toString() << std::endl;
     return 0;
 }
