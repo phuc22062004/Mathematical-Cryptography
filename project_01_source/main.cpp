@@ -22,9 +22,9 @@ uint64_t modular_exponentiation(uint64_t base, uint64_t exponent, uint64_t mod) 
 }
 
 int main() {
-    uint64_t base = 1234567890;
-    uint64_t exponent = 9876543210;
-    uint64_t mod = 1000000071;
+    uint64_t base     = 4386521043;
+    uint64_t exponent = 1660801374;
+    uint64_t mod      = 1002438071;
 
     uint64_t result = modular_exponentiation(base, exponent, mod);
     cout << "Result: " << result << endl;
