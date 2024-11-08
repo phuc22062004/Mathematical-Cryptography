@@ -427,13 +427,20 @@ BigUInt512 getBigPrime(int bits_size){
 }
 
 
-
-int main(){
-    int bits_size = 512;
-    BigUInt512 temp = getBigPrime(bits_size);
-    std::cout<< temp.toString();
+BigUInt512 generate_safe_prime(int bit_size) {
+  while (true) {
+    BigUInt512 p = getBigPrime(bit_size);
+    BigUInt512 q = (p - one) / two;
+    if (isProbablePrime(q))
+      return q;
+  }
 }
 
+int main() {
+  int bits_size = 512;
+  BigUInt512 temp = generate_safe_prime(bits_size);
+  std::cout << temp.toString();
+}
 
 // A: Trien khai ham luy thua mo-dun
 //  <...> modular_exponentiation(<..> base, <..> exponent, <..> mod){
