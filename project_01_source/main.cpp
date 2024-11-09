@@ -420,14 +420,13 @@ BigUInt512 pollardsRho(const BigUInt512& n) {
 std::vector<BigUInt512> factorize(const BigUInt512& n) {
     std::vector<BigUInt512> factors;
     BigUInt512 num = n;
-
-    
     
     
     BigUInt512 two("2");
     while (num.isEven()) {
         factors.push_back(two);
         num = num / two;
+        
     }
 
     
@@ -442,6 +441,7 @@ std::vector<BigUInt512> factorize(const BigUInt512& n) {
                 factors.push_back(curr);
                 //std::cout << curr.toString() << std::endl;
                 continue;
+                
             }
 
             BigUInt512 divisor = pollardsRho(curr);
@@ -453,15 +453,45 @@ std::vector<BigUInt512> factorize(const BigUInt512& n) {
     return factors;
 }
 
+BigUInt512 findGenerator(const BigUInt512& p) {
+    BigUInt512 one("1");
+    BigUInt512 p_minus_1 = p - one;
+    std::vector<BigUInt512> factors = factorize(p_minus_1);
+
+    
+
+    while (true) {
+        BigUInt512 x;
+        x.randomize(512);
+        x = x % (p - one - one) + BigUInt512("2"); 
+
+        bool isGenerator = true;
+        for (const auto& factor : factors) {
+            BigUInt512 z = p_minus_1 / factor;
+            
+            if (modular_exponentiation(x, z, p) == one) {
+                isGenerator = false;
+                break;
+
+            }
+        }
+
+        if (isGenerator) {
+            return x;
+        }
+    }
+}
+
 int main() {
-    int bit_size = 64; // You can change this to any bit size you need
+    int bit_size = 256; // You can change this to any bit size you need
     BigUInt512 prime = generateRandomPrime(bit_size);
     //BigUInt512 g ;
     //std::cout << "Random Number: " << g.toString() << std::endl;
     std::cout << "Random Prime Number: " << prime.toString() << std::endl;
-    BigUInt512 one("1");
-    std::vector<BigUInt512> factors = factorize(prime - one);
-    for (int i = 0; i < factors.size(); i++)
-        std::cout << factors[i].toString() << std::endl;
+    //std::vector<BigUInt512> factors = factorize(prime - one);
+    //for (int i = 0; i < factors.size(); i++)
+    //    std::cout << factors[i].toString() << std::endl;
+    BigUInt512 g = findGenerator(prime);
+    std::cout << g.toString() << std::endl;
     return 0;
 }
