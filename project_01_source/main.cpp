@@ -456,8 +456,8 @@ std::vector<BigUInt512> factorize(const BigUInt512& n) {
 BigUInt512 findGenerator(const BigUInt512& p) {
     BigUInt512 one("1");
     BigUInt512 p_minus_1 = p - one;
-    std::vector<BigUInt512> factors = factorize(p_minus_1);
 
+    std::vector<BigUInt512> factors = factorize(p_minus_1);
     
 
     while (true) {
@@ -468,7 +468,7 @@ BigUInt512 findGenerator(const BigUInt512& p) {
         bool isGenerator = true;
         for (const auto& factor : factors) {
             BigUInt512 z = p_minus_1 / factor;
-            
+
             if (modular_exponentiation(x, z, p) == one) {
                 isGenerator = false;
                 break;
@@ -482,6 +482,15 @@ BigUInt512 findGenerator(const BigUInt512& p) {
     }
 }
 
+BigUInt512 generatePrivateKey(const BigUInt512& p) {
+    BigUInt512 two("2");
+    
+    BigUInt512 x;
+    x.randomize(512);
+    x = x % (p - two) + BigUInt512("2");
+    return x;        
+}
+
 int main() {
     int bit_size = 256; // You can change this to any bit size you need
     BigUInt512 prime = generateRandomPrime(bit_size);
@@ -493,5 +502,18 @@ int main() {
     //    std::cout << factors[i].toString() << std::endl;
     BigUInt512 g = findGenerator(prime);
     std::cout << g.toString() << std::endl;
+
+    BigUInt512 a = generatePrivateKey(prime);
+    BigUInt512 b = generatePrivateKey(prime);
+
+    BigUInt512 A = modular_exponentiation(g, a, prime);
+    BigUInt512 B = modular_exponentiation(g, b, prime);
+
+    BigUInt512 AliceSecret = modular_exponentiation(B, a, prime);
+    BigUInt512 BobSecret = modular_exponentiation(A, b, prime);
+
+    std::cout << "Bi mat cua Alice: " << AliceSecret.toString() << std::endl;
+    std::cout << "Bi mat cua Bob: " << BobSecret.toString() << std::endl;
+    std::cout << "Qua trinh tinh toan co dung khong? " << (AliceSecret == BobSecret) << std::endl;
     return 0;
 }
