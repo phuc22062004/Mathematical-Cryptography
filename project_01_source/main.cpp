@@ -375,7 +375,7 @@ BigUInt512 generateRandomPrime(int bit_size) {
 }
 
 int main() {
-    int bit_size = 64; // You can change this to any bit size you need
+    int bit_size = 256; // You can change this to any bit size you need
     BigUInt512 prime = generateRandomPrime(bit_size);
     //BigUInt512 g ;
     //std::cout << "Random Number: " << g.toString() << std::endl;

@@ -39,6 +39,8 @@ using namespace std;
 #include <random>
 #include <stdexcept>
 #include <chrono>
+#include <iomanip>
+#include <cstdint>
 
 class BigUInt512 {
 private:
@@ -231,12 +233,34 @@ public:
 
     BigUInt512 operator*(const BigUInt512& other) const {
         BigUInt512 result;
-        for (size_t i = 0; i < SIZE; ++i) {
+        result.data.fill(0);
+
+        for (int i = 0; i < SIZE; i++) {
+            if (data[i] == 0) continue;
+
             uint64_t carry = 0;
-            for (size_t j = 0; j < SIZE - i; ++j) {
-                __uint128_t temp = static_cast<__uint128_t>(data[i]) * other.data[j] + result.data[i + j] + carry;
-                result.data[i + j] = static_cast<uint64_t>(temp);
-                carry = static_cast<uint64_t>(temp >> 64);
+            for (int j = 0; j < SIZE - i; j++) {
+                // Perform 64-bit multiplication
+                uint64_t a = data[i];
+                uint64_t b = other.data[j];
+
+                // Split into 32-bit parts
+                uint64_t a_low = a & 0xFFFFFFFF;
+                uint64_t a_high = a >> 32;
+                uint64_t b_low = b & 0xFFFFFFFF;
+                uint64_t b_high = b >> 32;
+
+                // Calculate partial products
+                uint64_t low = a_low * b_low;
+                uint64_t mid1 = a_low * b_high;
+                uint64_t mid2 = a_high * b_low;
+                uint64_t high = a_high * b_high;
+
+                // Combine results
+                uint64_t temp = result.data[i + j] + low + (mid1 << 32) + (mid2 << 32) + carry;
+                carry = high + (mid1 >> 32) + (mid2 >> 32) + (temp < result.data[i + j]);
+
+                result.data[i + j] = temp;
             }
         }
         return result;
@@ -379,9 +403,9 @@ BigUInt512 generateRandomPrime(int bit_size) {
 }
 
 int main() {
-    int bit_size = 512; // You can change this to any bit size you need
+    int bit_size = 128; // You can change this to any bit size you need
     BigUInt512 prime = generateRandomPrime(bit_size);
-    //BigUInt512 g ;
+    //BigUInt512 g.randomize() ;
     //std::cout << "Random Number: " << g.toString() << std::endl;
     std::cout << "Random Prime Number: " << prime.toString() << std::endl;
     return 0;
