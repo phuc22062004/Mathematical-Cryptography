@@ -231,36 +231,36 @@ public:
         return mod(divisor);
     }
 
+    static void multiply_uint64(uint64_t a, uint64_t b, uint64_t& low, uint64_t& high) {
+        uint64_t a_low = static_cast<uint32_t>(a);
+        uint64_t a_high = a >> 32;
+        uint64_t b_low = static_cast<uint32_t>(b);
+        uint64_t b_high = b >> 32;
+
+        uint64_t low_low = a_low * b_low;
+        uint64_t low_high = a_low * b_high;
+        uint64_t high_low = a_high * b_low;
+        uint64_t high_high = a_high * b_high;
+
+        uint64_t carry = (low_low >> 32) + static_cast<uint32_t>(low_high) + static_cast<uint32_t>(high_low);
+        low = (low_low & 0xFFFFFFFF) | (carry << 32);
+        high = high_high + (low_high >> 32) + (high_low >> 32) + (carry >> 32);
+    }
+
     BigUInt512 operator*(const BigUInt512& other) const {
         BigUInt512 result;
-        result.data.fill(0);
-
-        for (int i = 0; i < SIZE; i++) {
-            if (data[i] == 0) continue;
-
+        for (size_t i = 0; i < SIZE; ++i) {
             uint64_t carry = 0;
-            for (int j = 0; j < SIZE - i; j++) {
-                // Perform 64-bit multiplication
-                uint64_t a = data[i];
-                uint64_t b = other.data[j];
+            for (size_t j = 0; j < SIZE - i; ++j) {
+                uint64_t low, high;
+                multiply_uint64(data[i], other.data[j], low, high);
 
-                // Split into 32-bit parts
-                uint64_t a_low = a & 0xFFFFFFFF;
-                uint64_t a_high = a >> 32;
-                uint64_t b_low = b & 0xFFFFFFFF;
-                uint64_t b_high = b >> 32;
+                // Cộng low vào kết quả hiện tại và carry
+                uint64_t sum = result.data[i + j] + low + carry;
+                result.data[i + j] = sum;
 
-                // Calculate partial products
-                uint64_t low = a_low * b_low;
-                uint64_t mid1 = a_low * b_high;
-                uint64_t mid2 = a_high * b_low;
-                uint64_t high = a_high * b_high;
-
-                // Combine results
-                uint64_t temp = result.data[i + j] + low + (mid1 << 32) + (mid2 << 32) + carry;
-                carry = high + (mid1 >> 32) + (mid2 >> 32) + (temp < result.data[i + j]);
-
-                result.data[i + j] = temp;
+                // Xác định carry mới
+                carry = high + (sum < low);  // Xử lý carry do tràn khi cộng
             }
         }
         return result;
@@ -403,7 +403,7 @@ BigUInt512 generateRandomPrime(int bit_size) {
 }
 
 int main() {
-    int bit_size = 128; // You can change this to any bit size you need
+    int bit_size = 256; // You can change this to any bit size you need
     BigUInt512 prime = generateRandomPrime(bit_size);
     //BigUInt512 g.randomize() ;
     //std::cout << "Random Number: " << g.toString() << std::endl;
