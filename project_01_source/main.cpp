@@ -1,51 +1,12 @@
-/******************************************************************************
-
-                              Online C++ Compiler.
-               Code, Compile, Run and Debug C++ program online.
-Write your code in this editor and press "Run" button to compile and execute it.
-
-*******************************************************************************/
-
 #include <iostream>
 #include <math.h>
-
-using namespace std;
-
-// A: Trien khai ham luy thua mo-dun
-//  <...> modular_exponentiation(<..> base, <..> exponent, <..> mod){
-
-// }
-
-// B: Trien khai ham sinh so nguyen to ngau nhien
-//<..> generate_safe_prime(int bit_size){
-
-// }
-
-// C: Trien khai ham sinh khoa ngau nhien
-//<..> generate_private_key(<..> p){
-//  }
-
-// D: Hoan thanh logic trao doi khoa Diffie-Hellman
-// int main(){
-// 1. Sinh so nguyen to lon hon p va phan tu sinh g
-//  int bit_size = 512;
-
-// 2. Sinh khoa rieng cua Alice va Bob
-
-// 3. Tinh gia tri cong khai cua Alice va Bob
-
-// 4. Tinh bi mat chung
-
-// 5. Hien thi ket qua va xac minh rang bi mat trung khop
-
-//}
-
 #include <iostream>
 #include <array>
 #include <string>
 #include <algorithm>
 #include <random>
 #include <stdexcept>
+using namespace std;
 
 class BigUInt512 {
 private:
@@ -233,14 +194,36 @@ public:
         return mod(divisor);
     }
 
+    static void multiply_uint64(uint64_t a, uint64_t b, uint64_t& low, uint64_t& high) {
+        uint64_t a_low = static_cast<uint32_t>(a);
+        uint64_t a_high = a >> 32;
+        uint64_t b_low = static_cast<uint32_t>(b);
+        uint64_t b_high = b >> 32;
+
+        uint64_t low_low = a_low * b_low;
+        uint64_t low_high = a_low * b_high;
+        uint64_t high_low = a_high * b_low;
+        uint64_t high_high = a_high * b_high;
+
+        uint64_t carry = (low_low >> 32) + static_cast<uint32_t>(low_high) + static_cast<uint32_t>(high_low);
+        low = (low_low & 0xFFFFFFFF) | (carry << 32);
+        high = high_high + (low_high >> 32) + (high_low >> 32) + (carry >> 32);
+    }
+
     BigUInt512 operator*(const BigUInt512& other) const {
         BigUInt512 result;
         for (size_t i = 0; i < SIZE; ++i) {
             uint64_t carry = 0;
             for (size_t j = 0; j < SIZE - i; ++j) {
-                __uint128_t temp = static_cast<__uint128_t>(data[i]) * other.data[j] + result.data[i + j] + carry;
-                result.data[i + j] = static_cast<uint64_t>(temp);
-                carry = static_cast<uint64_t>(temp >> 64);
+                uint64_t low, high;
+                multiply_uint64(data[i], other.data[j], low, high);
+
+                // Cộng low vào kết quả hiện tại và carry
+                uint64_t sum = result.data[i + j] + low + carry;
+                result.data[i + j] = sum;
+
+                // Xác định carry mới
+                carry = high + (sum < low);  // Xử lý carry do tràn khi cộng
             }
         }
         return result;
@@ -455,6 +438,7 @@ std::vector<BigUInt512> factorize(const BigUInt512& n) {
 
 BigUInt512 findGenerator(const BigUInt512& p) {
     BigUInt512 one("1");
+    BigUInt512 two("2");
     BigUInt512 p_minus_1 = p - one;
 
     std::vector<BigUInt512> factors = factorize(p_minus_1);
@@ -463,7 +447,7 @@ BigUInt512 findGenerator(const BigUInt512& p) {
     while (true) {
         BigUInt512 x;
         x.randomize(512);
-        x = x % (p - one - one) + BigUInt512("2"); 
+        x = x % (p - two) + two; 
 
         bool isGenerator = true;
         for (const auto& factor : factors) {
@@ -484,10 +468,9 @@ BigUInt512 findGenerator(const BigUInt512& p) {
 
 BigUInt512 generatePrivateKey(const BigUInt512& p) {
     BigUInt512 two("2");
-    
     BigUInt512 x;
     x.randomize(512);
-    x = x % (p - two) + BigUInt512("2");
+    x = x % (p - two) + two;
     return x;        
 }
 
