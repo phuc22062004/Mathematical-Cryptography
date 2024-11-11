@@ -91,7 +91,7 @@ public:
         while (!temp.isZero())
         {
             uint64_t remainder = temp.divideBy10();
-            result.push_back('0' + remainder);
+            result.push_back('0' + static_cast<char>(remainder));
         }
         if (result.empty())
         {
@@ -638,15 +638,27 @@ int main()
     thread3.join();
     thread4.join();
 
-    thread thread5(modular_exponentiation, ref(A), ref(g), ref(a), ref(prime));
-    thread thread6(modular_exponentiation, ref(B), ref(g), ref(b), ref(prime));
+    BigUInt512 tempA, tempB;
+    thread thread5([&]()
+                   { tempA = modular_exponentiation(g, a, prime); });
+    thread thread6([&]()
+                   { tempB = modular_exponentiation(g, b, prime); });
     thread5.join();
     thread6.join();
 
-    thread thread7(modular_exponentiation, ref(AliceSecret), ref(B), ref(a), ref(prime));
-    thread thread8(modular_exponentiation, ref(BobSecret), ref(A), ref(b), ref(prime));
+    A = tempA;
+    B = tempB;
+
+    BigUInt512 tempAliceSecret, tempBobSecret;
+    thread thread7([&]()
+                   { tempAliceSecret = modular_exponentiation(B, a, prime); });
+    thread thread8([&]()
+                   { tempBobSecret = modular_exponentiation(A, b, prime); });
     thread7.join();
     thread8.join();
+
+    AliceSecret = tempAliceSecret;
+    BobSecret = tempBobSecret;
 
     cout << "Safe Prime: " << prime.toString() << endl;
     cout << "Generator (g): " << g.toString() << endl;
@@ -656,5 +668,6 @@ int main()
     cout << "Secret Key of Bob: " << BobSecret.toString() << endl;
     cout << "Are the secret keys equal? " << (AliceSecret == BobSecret ? "Yes" : "No") << endl;
 
+    return 0;
     return 0;
 }
