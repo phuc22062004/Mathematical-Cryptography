@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <random>
 #include <stdexcept>
+#include <thread>
 using namespace std;
 
 class BigUInt512
@@ -666,6 +667,7 @@ BigUInt512 generatePrivateKey(const BigUInt512 &p)
 
 int main()
 {
+    vector<thread> threads;
     int bit_size = 512; // You can change this to any bit size you need
     BigUInt512 prime = generate_safe_prime(bit_size);
     // BigUInt512 g ;
