@@ -1,12 +1,15 @@
 #include <iostream>
-#include <math.h>
-#include <iostream>
+#include <cstdint>
+#include <vector>
+#include <random>
+#include <bitset>
+#include <chrono>
 #include <array>
 #include <string>
+#include <iomanip>
+#include <sstream>
 #include <algorithm>
-#include <random>
 #include <stdexcept>
-using namespace std;
 
 class BigUInt512 {
 private:
@@ -129,24 +132,6 @@ public:
         return remainder;
     }
 
-    void randomize(int bit_size) {
-        std::random_device rd;
-        std::mt19937_64 gen(rd());
-        std::uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
-        
-        data.fill(0);
-        int full_chunks = bit_size / 64;
-        int remaining_bits = bit_size % 64;
-
-        for (int i = 0; i < full_chunks; ++i) {
-            data[i] = dis(gen);
-        }
-
-        if (remaining_bits > 0) {
-            uint64_t mask = (1ULL << remaining_bits) - 1;
-            data[full_chunks] = dis(gen) & mask;
-        }
-    }
 
     bool isEven() const {
         return (data[0] & 1) == 0;
@@ -229,6 +214,7 @@ public:
         return result;
     }
 
+
     BigUInt512 operator/(const BigUInt512& divisor) const {
         // Check for division by zero
         if (divisor.isZero()) {
@@ -301,6 +287,8 @@ public:
         return true;
     }
 
+    
+
     bool operator>(const BigUInt512& other) const {
         for (int i = SIZE - 1; i >= 0; --i) {
             if (data[i] > other.data[i]) return true;
@@ -310,7 +298,156 @@ public:
     }
 
     // Add more arithmetic operations as needed
+    bool isOdd() const {
+        return (data[0] & 1) == 1;  // Kiểm tra bit thấp nhất
+    }
+    void randomize(int bit_size=512) { 
+        bit_size = bit_size - 1;
+        std::random_device rd;
+        std::mt19937_64 gen(rd());
+        std::uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
+        
+        data.fill(0);
+        int full_chunks = bit_size / 64;
+        int remaining_bits = bit_size % 64;
+
+        for (int i = 0; i < full_chunks; ++i) {
+            data[i] = dis(gen);
+        }
+
+        if (remaining_bits > 0) {
+            uint64_t mask = (1ULL << remaining_bits) - 1;
+            data[full_chunks] = dis(gen) & mask;
+        }
+    }
 };
+
+
+const BigUInt512 zero("0");
+const BigUInt512 one("1");
+const BigUInt512 two("2");
+
+std::vector<std::string> first_primes = { "2", "3", "5", "7", "11", "13", "17", "19", "23", "29", 
+                                          "31", "37", "41", "43", "47", "53", "59", "61", "67", "71",
+                                          "73", "79", "83", "89", "97", "101", "103",
+                                          "107", "109", "113", "127", "131", "137", "139",
+                                          "149", "151", "157", "163", "167", "173", "179",
+                                          "181", "191", "193", "197", "199", "211", "223",
+                                          "227", "229", "233", "239", "241", "251", "257",
+                                          "263", "269", "271", "277", "281", "283", "293",
+                                          "307", "311", "313", "317", "331", "337", "347", "349" };
+BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m){
+    BigUInt512 res = zero;
+    while (a != zero)
+    {
+        if(a.isOdd()){
+            res = (res + b) % m;
+        }
+        a = a >> 1;
+        b = (b*two) % m;
+    }
+    return res;
+}
+
+BigUInt512 powMod(BigUInt512 a, BigUInt512 b, BigUInt512 n){
+    BigUInt512 x = one;
+    a = a % n;
+    while (b >= one)
+    {
+        if (b%two == one)
+        {
+            x = mulmod(x, a, n);
+            b = b - one;
+        }
+        a = mulmod(a, a, n);
+        b = b >> 1;
+    }
+    return x;
+}
+
+BigUInt512 getLowLevelPrime(int bits_size){
+    while (true)
+    {
+        BigUInt512 candidate;
+        candidate.randomize(bits_size);
+        bool is_prime = true;
+        for (int i = 0; i < first_primes.size(); i++)
+        {
+            BigUInt512 prime(first_primes[i]);
+            if (candidate == prime)
+                return candidate;
+
+            if(candidate % prime == zero){
+                is_prime = false;
+                break;
+            } 
+        }
+        if (is_prime)
+            return candidate;
+    }
+}
+
+bool trialComposite(BigUInt512 a, BigUInt512 d, BigUInt512 n, int s) {
+    BigUInt512 x = powMod(a, d, n);
+    if (x == one || x == n - one) {
+        return false; // Not composite
+    }
+    for (int r = 1; r < s; ++r) {
+        x = mulmod(x, x, n);
+        if (x == n - one) return false; // Not composite
+    }
+    return true; // Composite
+}
+
+bool isProbablePrime(BigUInt512 n, int rounds = 5) {
+    if (!(n >= two)) return false;
+    if (n == two || n == BigUInt512("3")) return true;
+    if (n.isEven()) return false;
+
+    // Write (n - 1) as d * 2^s
+    BigUInt512 d = n - one;
+    int s = 0;
+
+    while (d.isEven()) {
+        d = d >> 1;
+        s++;
+    }
+
+    // Perform rounds of Miller-Rabin primality test
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<uint64_t> dist(2, 0xFFFFFFFFFFFFFFFF);
+
+    for (int i = 0; i < rounds; ++i) {
+        BigUInt512 a;
+        a.randomize();
+        a = a % (n-two) + two;
+        if (trialComposite(a, d, n, s)) {
+            return false; // Composite
+        }
+    }
+    return true; // Probably prime
+}
+
+
+BigUInt512 getBigPrime(int bits_size){
+    while (true)
+    {
+        BigUInt512 candidate = getLowLevelPrime(bits_size);
+        if(isProbablePrime(candidate))
+            return candidate;
+    }
+}
+
+
+BigUInt512 generate_safe_prime(int bit_size) {
+  while (true) {
+    BigUInt512 p = getBigPrime(bit_size);
+    BigUInt512 q = (p - one) / two;
+    if (isProbablePrime(q))
+      return q;
+  }
+}
 
 BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const BigUInt512& mod) {
     BigUInt512 result("1");
@@ -325,53 +462,6 @@ BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const Bi
     return result;
 }
 
-bool isPrime(const BigUInt512& number, int iterations = 5) {
-    if (number.isZero() || number.isEven()) return false;
-
-    BigUInt512 one("1");
-    BigUInt512 two("2");
-    BigUInt512 d = number - one;
-    int s = 0;
-
-    while (d.isEven()) {
-        d = d >> 1;
-        ++s;
-    }
-
-    std::random_device rd;
-    std::mt19937_64 gen(rd());
-    std::uniform_int_distribution<uint64_t> dis(2, 0xFFFFFFFFFFFFFFFF);
-
-    for (int i = 0; i < iterations; ++i) {
-        BigUInt512 a;
-        a.randomize(512);
-        a = a % (number - two) + two;
-
-        BigUInt512 x = modular_exponentiation(a, d, number);
-        if (x == one || x == number - one) continue;
-
-        bool composite = true;
-        for (int r = 1; r < s; ++r) {
-            x = modular_exponentiation(x, two, number);
-            if (x == number - one) {
-                composite = false;
-                break;
-            }
-        }
-
-        if (composite) return false;
-    }
-
-    return true;
-}
-
-BigUInt512 generateRandomPrime(int bit_size) {
-    BigUInt512 prime;
-    do {
-        prime.randomize(bit_size);
-    } while (!isPrime(prime));
-    return prime;
-}
 
 
 BigUInt512 gcd(const BigUInt512& a, const BigUInt512& b) {
@@ -420,7 +510,7 @@ std::vector<BigUInt512> factorize(const BigUInt512& n) {
             BigUInt512 curr = stack.back();
             stack.pop_back();
 
-            if (isPrime(curr)) {
+            if (isProbablePrime(curr)) {
                 factors.push_back(curr);
                 //std::cout << curr.toString() << std::endl;
                 continue;
@@ -476,7 +566,7 @@ BigUInt512 generatePrivateKey(const BigUInt512& p) {
 
 int main() {
     int bit_size = 256; // You can change this to any bit size you need
-    BigUInt512 prime = generateRandomPrime(bit_size);
+    BigUInt512 prime = generate_safe_prime(bit_size);
     //BigUInt512 g ;
     //std::cout << "Random Number: " << g.toString() << std::endl;
     std::cout << "Random Prime Number: " << prime.toString() << std::endl;
