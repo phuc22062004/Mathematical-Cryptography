@@ -350,9 +350,9 @@ public:
     void randomize(int bit_size = 512)
     {
         bit_size = bit_size - 1;
-        std::random_device rd;
-        std::mt19937_64 gen(rd());
-        std::uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
+        random_device rd;
+        mt19937_64 gen(rd());
+        uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
 
         data.fill(0);
         int full_chunks = bit_size / 64;
@@ -391,15 +391,15 @@ const BigUInt512 zero("0");
 const BigUInt512 one("1");
 const BigUInt512 two("2");
 
-std::vector<std::string> first_primes = {"2", "3", "5", "7", "11", "13", "17", "19", "23", "29",
-                                         "31", "37", "41", "43", "47", "53", "59", "61", "67", "71",
-                                         "73", "79", "83", "89", "97", "101", "103",
-                                         "107", "109", "113", "127", "131", "137", "139",
-                                         "149", "151", "157", "163", "167", "173", "179",
-                                         "181", "191", "193", "197", "199", "211", "223",
-                                         "227", "229", "233", "239", "241", "251", "257",
-                                         "263", "269", "271", "277", "281", "283", "293",
-                                         "307", "311", "313", "317", "331", "337", "347", "349"};
+vector<string> first_primes = {"2", "3", "5", "7", "11", "13", "17", "19", "23", "29",
+                               "31", "37", "41", "43", "47", "53", "59", "61", "67", "71",
+                               "73", "79", "83", "89", "97", "101", "103",
+                               "107", "109", "113", "127", "131", "137", "139",
+                               "149", "151", "157", "163", "167", "173", "179",
+                               "181", "191", "193", "197", "199", "211", "223",
+                               "227", "229", "233", "239", "241", "251", "257",
+                               "263", "269", "271", "277", "281", "283", "293",
+                               "307", "311", "313", "317", "331", "337", "347", "349"};
 BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m)
 {
     BigUInt512 res = zero;
@@ -414,59 +414,12 @@ BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m)
     }
     return res;
 }
-bool isPrime(const BigUInt512 &number, int iterations = 5)
-{
-    if (number.isZero() || number.isEven())
-        return false;
-
-    BigUInt512 one("1");
-    BigUInt512 two("2");
-    BigUInt512 d = number - one;
-    int s = 0;
-
-    while (d.isEven())
-    {
-        d = d >> 1;
-        ++s;
-    }
-
-    random_device rd;
-    mt19937_64 gen(rd());
-    uniform_int_distribution<uint64_t> dis(2, 0xFFFFFFFFFFFFFFFF);
-
-    for (int i = 0; i < iterations; ++i)
-    {
-        BigUInt512 a;
-        a.randomize();
-        a = a % (number - two) + two;
-
-        BigUInt512 x = modular_exponentiation(a, d, number);
-        if (x == one || x == number - one)
-            continue;
-
-        bool composite = true;
-        for (int r = 1; r < s; ++r)
-        {
-            x = modular_exponentiation(x, two, number);
-            if (x == number - one)
-            {
-                composite = false;
-                break;
-            }
-        }
-
-        if (composite)
-            return false;
-    }
-
-    return true;
-}
-BigUInt512 getLowLevelPrime(int bits_size)
+BigUInt512 getLowLevelPrime(int bit_size)
 {
     while (true)
     {
         BigUInt512 candidate;
-        candidate.randomize();
+        candidate.randomize(bit_size);
         bool is_prime = true;
         for (int i = 0; i < first_primes.size(); i++)
         {
@@ -520,9 +473,9 @@ bool isProbablePrime(BigUInt512 n, int rounds = 5)
     }
 
     // Perform rounds of Miller-Rabin primality test
-    std::random_device rd;
-    std::mt19937_64 gen(rd());
-    std::uniform_int_distribution<uint64_t> dist(2, 0xFFFFFFFFFFFFFFFF);
+    random_device rd;
+    mt19937_64 gen(rd());
+    uniform_int_distribution<uint64_t> dist(2, 0xFFFFFFFFFFFFFFFF);
 
     for (int i = 0; i < rounds; ++i)
     {
@@ -537,11 +490,11 @@ bool isProbablePrime(BigUInt512 n, int rounds = 5)
     return true; // Probably prime
 }
 
-BigUInt512 getBigPrime(int bits_size)
+BigUInt512 getBigPrime(int bit_size)
 {
     while (true)
     {
-        BigUInt512 candidate = getLowLevelPrime(bits_size);
+        BigUInt512 candidate = getLowLevelPrime(bit_size);
         if (isProbablePrime(candidate))
             return candidate;
     }
@@ -607,7 +560,7 @@ vector<BigUInt512> factorize(const BigUInt512 &n)
             BigUInt512 curr = stack.back();
             stack.pop_back();
 
-            if (isPrime(curr))
+            if (isProbablePrime(curr))
             {
                 factors.push_back(curr);
                 // cout << curr.toString() << endl;
@@ -667,29 +620,41 @@ BigUInt512 generatePrivateKey(const BigUInt512 &p)
 
 int main()
 {
-    vector<thread> threads;
-    int bit_size = 512; // You can change this to any bit size you need
-    BigUInt512 prime = generate_safe_prime(bit_size);
-    // BigUInt512 g ;
-    // cout << "Random Number: " << g.toString() << endl;
-    cout << "Random Safe Number: " << prime.toString() << endl;
-    // vector<BigUInt512> factors = factorize(prime - one);
-    // for (int i = 0; i < factors.size(); i++)
-    //     cout << factors[i].toString() << endl;
-    BigUInt512 g = findGenerator(prime);
-    cout << g.toString() << endl;
+    int bit_size = 512;
+    BigUInt512 prime, g, a, b, A, B, AliceSecret, BobSecret;
 
-    BigUInt512 a = generatePrivateKey(prime);
-    BigUInt512 b = generatePrivateKey(prime);
+    thread thread1([&]()
+                   { prime = generate_safe_prime(bit_size); });
+    thread1.join();
 
-    BigUInt512 A = modular_exponentiation(g, a, prime);
-    BigUInt512 B = modular_exponentiation(g, b, prime);
+    thread thread2([&]()
+                   { g = findGenerator(prime); });
+    thread2.join();
 
-    BigUInt512 AliceSecret = modular_exponentiation(B, a, prime);
-    BigUInt512 BobSecret = modular_exponentiation(A, b, prime);
+    thread thread3([&]()
+                   { a = generatePrivateKey(prime); });
+    thread thread4([&]()
+                   { b = generatePrivateKey(prime); });
+    thread3.join();
+    thread4.join();
 
-    cout << "Bi mat cua Alice: " << AliceSecret.toString() << endl;
-    cout << "Bi mat cua Bob: " << BobSecret.toString() << endl;
-    cout << "Qua trinh tinh toan co dung khong? " << (AliceSecret == BobSecret) << endl;
+    thread thread5(modular_exponentiation, ref(A), ref(g), ref(a), ref(prime));
+    thread thread6(modular_exponentiation, ref(B), ref(g), ref(b), ref(prime));
+    thread5.join();
+    thread6.join();
+
+    thread thread7(modular_exponentiation, ref(AliceSecret), ref(B), ref(a), ref(prime));
+    thread thread8(modular_exponentiation, ref(BobSecret), ref(A), ref(b), ref(prime));
+    thread7.join();
+    thread8.join();
+
+    cout << "Safe Prime: " << prime.toString() << endl;
+    cout << "Generator (g): " << g.toString() << endl;
+    cout << "Public Key of Alice (A): " << A.toString() << endl;
+    cout << "Public Key of Bob (B): " << B.toString() << endl;
+    cout << "Secret Key of Alice: " << AliceSecret.toString() << endl;
+    cout << "Secret Key of Bob: " << BobSecret.toString() << endl;
+    cout << "Are the secret keys equal? " << (AliceSecret == BobSecret ? "Yes" : "No") << endl;
+
     return 0;
 }
