@@ -337,7 +337,7 @@ BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m){
     return res;
 }
 
-BigUInt512 powMod(BigUInt512 a, BigUInt512 b, BigUInt512 n){
+BigUInt512 modular_exponentiation(BigUInt512 a, BigUInt512 b, BigUInt512 n){
     BigUInt512 x = one;
     a = a % n;
     while (b >= one)
@@ -376,7 +376,7 @@ BigUInt512 getLowLevelPrime(int bits_size){
 }
 
 bool trialComposite(BigUInt512 a, BigUInt512 d, BigUInt512 n, int s) {
-    BigUInt512 x = powMod(a, d, n);
+    BigUInt512 x = modular_exponentiation(a, d, n);
     if (x == one || x == n - one) {
         return false; // Not composite
     }
@@ -432,12 +432,14 @@ BigUInt512 generate_safe_prime(int bit_size) {
     BigUInt512 p = getBigPrime(bit_size);
     BigUInt512 q = (p - one) / two;
     if (isProbablePrime(q))
-      return q;
+      return p;
   }
 }
 
 int main() {
   int bits_size = 512;
+  std::cout<<"Moi nhap so bit: ";
+  std::cin>>bits_size;
   BigUInt512 temp = generate_safe_prime(bits_size);
   std::cout << temp.toString();
 }
