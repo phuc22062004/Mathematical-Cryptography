@@ -24,13 +24,13 @@ public:
         data.fill(0);
     }
 
-    BigUInt512(const string& number)
+    BigUInt512(const string &number)
     {
         data.fill(0);
         fromString(number);
     }
 
-    void fromString(const string& number)
+    void fromString(const string &number)
     {
         // Clear existing data
         data.fill(0);
@@ -108,7 +108,7 @@ public:
 
     bool isZero() const
     {
-        for (const auto& part : data)
+        for (const auto &part : data)
         {
             if (part != 0)
             {
@@ -118,7 +118,7 @@ public:
         return true;
     }
 
-    BigUInt512 operator+(const BigUInt512& other) const
+    BigUInt512 operator+(const BigUInt512 &other) const
     {
         BigUInt512 result;
         uint64_t carry = 0;
@@ -159,7 +159,7 @@ public:
         return (data[0] & 1) == 0;
     }
 
-    BigUInt512 subtract(const BigUInt512& other) const
+    BigUInt512 subtract(const BigUInt512 &other) const
     {
         BigUInt512 result;
         uint64_t borrow = 0;
@@ -172,7 +172,7 @@ public:
         return result;
     }
 
-    BigUInt512 mod(const BigUInt512& divisor) const
+    BigUInt512 mod(const BigUInt512 &divisor) const
     {
         // Check for division by zero
         if (divisor.isZero())
@@ -199,17 +199,17 @@ public:
         return remainder;
     }
 
-    BigUInt512 operator-(const BigUInt512& other) const
+    BigUInt512 operator-(const BigUInt512 &other) const
     {
         return subtract(other);
     }
 
-    BigUInt512 operator%(const BigUInt512& divisor) const
+    BigUInt512 operator%(const BigUInt512 &divisor) const
     {
         return mod(divisor);
     }
 
-    static void multiply_uint64(uint64_t a, uint64_t b, uint64_t& low, uint64_t& high)
+    static void multiply_uint64(uint64_t a, uint64_t b, uint64_t &low, uint64_t &high)
     {
         uint64_t a_low = static_cast<uint32_t>(a);
         uint64_t a_high = a >> 32;
@@ -226,7 +226,7 @@ public:
         high = high_high + (low_high >> 32) + (high_low >> 32) + (carry >> 32);
     }
 
-    BigUInt512 operator*(const BigUInt512& other) const
+    BigUInt512 operator*(const BigUInt512 &other) const
     {
         BigUInt512 result;
         for (size_t i = 0; i < SIZE; ++i)
@@ -246,7 +246,7 @@ public:
         return result;
     }
 
-    BigUInt512 operator/(const BigUInt512& divisor) const
+    BigUInt512 operator/(const BigUInt512 &divisor) const
     {
         // Check for division by zero
         if (divisor.isZero())
@@ -309,7 +309,7 @@ public:
         return result;
     }
 
-    bool operator==(const BigUInt512& other) const
+    bool operator==(const BigUInt512 &other) const
     {
         for (int i = 0; i < SIZE; ++i)
         {
@@ -319,12 +319,12 @@ public:
         return true;
     }
 
-    bool operator!=(const BigUInt512& other) const
+    bool operator!=(const BigUInt512 &other) const
     {
         return !(*this == other);
     }
 
-    bool operator>=(const BigUInt512& other) const
+    bool operator>=(const BigUInt512 &other) const
     {
         for (int i = SIZE - 1; i >= 0; --i)
         {
@@ -336,7 +336,7 @@ public:
         return true;
     }
 
-    bool operator>(const BigUInt512& other) const
+    bool operator>(const BigUInt512 &other) const
     {
         for (int i = SIZE - 1; i >= 0; --i)
         {
@@ -349,7 +349,7 @@ public:
     }
 
     // Add more arithmetic operations as needed
-    void randomize(int bit_size = 512)
+    void randomize(int bit_size = 256)
     {
         bit_size = bit_size - 1;
         random_device rd;
@@ -373,7 +373,7 @@ public:
     }
 };
 
-BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const BigUInt512& mod)
+BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const BigUInt512 &mod)
 {
     BigUInt512 result("1");
     while (!exponent.isZero())
@@ -392,7 +392,7 @@ const BigUInt512 zero("0");
 const BigUInt512 one("1");
 const BigUInt512 two("2");
 
-vector<string> first_primes = { "2", "3", "5", "7", "11", "13", "17", "19", "23", "29",
+vector<string> first_primes = {"2", "3", "5", "7", "11", "13", "17", "19", "23", "29",
                                "31", "37", "41", "43", "47", "53", "59", "61", "67", "71",
                                "73", "79", "83", "89", "97", "101", "103",
                                "107", "109", "113", "127", "131", "137", "139",
@@ -400,7 +400,7 @@ vector<string> first_primes = { "2", "3", "5", "7", "11", "13", "17", "19", "23"
                                "181", "191", "193", "197", "199", "211", "223",
                                "227", "229", "233", "239", "241", "251", "257",
                                "263", "269", "271", "277", "281", "283", "293",
-                               "307", "311", "313", "317", "331", "337", "347", "349" };
+                               "307", "311", "313", "317", "331", "337", "347", "349"};
 BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m)
 {
     BigUInt512 result = zero;
@@ -465,7 +465,6 @@ bool isProbablePrime(BigUInt512 n, int rounds = 5)
     if (n.isEven())
         return false;
 
-    // Write (n - 1) as d * 2^s
     BigUInt512 d = n - one;
     int s = 0;
     while (d.isEven())
@@ -474,7 +473,6 @@ bool isProbablePrime(BigUInt512 n, int rounds = 5)
         s++;
     }
 
-    // Perform rounds of Miller-Rabin primality test
     random_device rd;
     mt19937_64 gen(rd());
     uniform_int_distribution<uint64_t> dist(2, 0xFFFFFFFFFFFFFFFF);
@@ -484,12 +482,44 @@ bool isProbablePrime(BigUInt512 n, int rounds = 5)
         BigUInt512 a;
         a.randomize();
         a = a % (n - two) + two;
-        if (trialComposite(a, d, n, s))
+
+        BigUInt512 x = modular_exponentiation(a, d, n);
+        if (x == one || x == n - one)
+            continue;
+
+        bool isComposite = true;
+        for (int r = 1; r < s && isComposite; ++r)
         {
-            return false; // Composite
+            x = (x * x) % n;
+            if (x == n - one)
+                isComposite = false;
         }
+        if (isComposite)
+            return false;
     }
-    return true; // Probably prime
+    return true;
+}
+
+// Hàm tìm số nguyên tố tiếp theo lớn hơn hoặc bằng một số cho trước
+BigUInt512 findNextPrime(const BigUInt512 &start)
+{
+    BigUInt512 candidate = start;
+
+    // Nếu là số chẵn, tăng lên để chuyển sang số lẻ
+    if (candidate.isEven())
+    {
+        candidate = candidate + BigUInt512("1");
+    }
+
+    // Tăng dần đến khi tìm thấy một số nguyên tố
+    while (true)
+    {
+        if (isProbablePrime(candidate))
+        {
+            return candidate;
+        }
+        candidate = candidate + BigUInt512("2"); // Chỉ kiểm tra số lẻ
+    }
 }
 
 BigUInt512 getBigPrime(int bit_size)
@@ -504,28 +534,38 @@ BigUInt512 getBigPrime(int bit_size)
 
 BigUInt512 generate_safe_prime(int bit_size)
 {
+    BigUInt512 candidate;
+    candidate.randomize(bit_size);
+
+    // Tìm số nguyên tố lớn hơn hoặc bằng số ngẫu nhiên đã sinh ra
+    BigUInt512 p = findNextPrime(candidate);
+
+    // Kiểm tra điều kiện để là số nguyên tố an toàn
     while (true)
     {
-        BigUInt512 p = getBigPrime(bit_size);
-        BigUInt512 q = (p - one) / two;
+        BigUInt512 q = (p - BigUInt512("1")) / BigUInt512("2");
         if (isProbablePrime(q))
+        {
             return p;
+        }
+        p = p + BigUInt512("2"); // Tiếp tục kiểm tra số lẻ tiếp theo
+        p = findNextPrime(p);    // Tìm số nguyên tố kế tiếp
     }
 }
 
-BigUInt512 gcd(const BigUInt512& a, const BigUInt512& b)
+BigUInt512 gcd(const BigUInt512 &a, const BigUInt512 &b)
 {
     if (b.isZero())
         return a;
     return gcd(b, a % b);
 }
 
-BigUInt512 pollardsRhoFunction(const BigUInt512& x, const BigUInt512& n)
+BigUInt512 pollardsRhoFunction(const BigUInt512 &x, const BigUInt512 &n)
 {
     return (x * x + BigUInt512("1")) % n;
 }
 
-BigUInt512 pollardsRho(const BigUInt512& n)
+BigUInt512 pollardsRho(const BigUInt512 &n)
 {
     if (n.isEven())
         return BigUInt512("2");
@@ -542,7 +582,7 @@ BigUInt512 pollardsRho(const BigUInt512& n)
     return d;
 }
 
-vector<BigUInt512> factorize(const BigUInt512& n)
+vector<BigUInt512> factorize(const BigUInt512 &n)
 {
     vector<BigUInt512> factors;
     BigUInt512 num = n;
@@ -556,7 +596,7 @@ vector<BigUInt512> factorize(const BigUInt512& n)
 
     if (num > BigUInt512("1"))
     {
-        vector<BigUInt512> stack = { num };
+        vector<BigUInt512> stack = {num};
         while (!stack.empty())
         {
             BigUInt512 curr = stack.back();
@@ -578,7 +618,7 @@ vector<BigUInt512> factorize(const BigUInt512& n)
     return factors;
 }
 
-BigUInt512 findGenerator(const BigUInt512& p)
+BigUInt512 findGenerator(const BigUInt512 &p)
 {
     BigUInt512 one("1");
     BigUInt512 two("2");
@@ -593,7 +633,7 @@ BigUInt512 findGenerator(const BigUInt512& p)
         x = x % (p - two) + two;
 
         bool isGenerator = true;
-        for (const auto& factor : factors)
+        for (const auto &factor : factors)
         {
             BigUInt512 z = p_minus_1 / factor;
 
@@ -611,7 +651,7 @@ BigUInt512 findGenerator(const BigUInt512& p)
     }
 }
 
-BigUInt512 generatePrivateKey(const BigUInt512& p)
+BigUInt512 generatePrivateKey(const BigUInt512 &p)
 {
     BigUInt512 two("2");
     BigUInt512 x;
@@ -622,36 +662,35 @@ BigUInt512 generatePrivateKey(const BigUInt512& p)
 
 int main()
 {
-    int bit_size = 512;
+    int bit_size = 128;
     BigUInt512 prime, g, a, b, A, B, AliceSecret, BobSecret;
 
-    // Sử dụng std::async cho các tác vụ song song
     auto future_prime = async(launch::async, [&]()
-        { return generate_safe_prime(bit_size); });
+                              { return generate_safe_prime(bit_size); });
     prime = future_prime.get();
 
     auto future_g = async(launch::async, [&]()
-        { return findGenerator(prime); });
+                          { return findGenerator(prime); });
     g = future_g.get();
 
     auto future_a = async(launch::async, [&]()
-        { return generatePrivateKey(prime); });
+                          { return generatePrivateKey(prime); });
     auto future_b = async(launch::async, [&]()
-        { return generatePrivateKey(prime); });
+                          { return generatePrivateKey(prime); });
     a = future_a.get();
     b = future_b.get();
 
     auto future_A = async(launch::async, [&]()
-        { return modular_exponentiation(g, a, prime); });
+                          { return modular_exponentiation(g, a, prime); });
     auto future_B = async(launch::async, [&]()
-        { return modular_exponentiation(g, b, prime); });
+                          { return modular_exponentiation(g, b, prime); });
     A = future_A.get();
     B = future_B.get();
 
     auto future_AliceSecret = async(launch::async, [&]()
-        { return modular_exponentiation(B, a, prime); });
+                                    { return modular_exponentiation(B, a, prime); });
     auto future_BobSecret = async(launch::async, [&]()
-        { return modular_exponentiation(A, b, prime); });
+                                  { return modular_exponentiation(A, b, prime); });
     AliceSecret = future_AliceSecret.get();
     BobSecret = future_BobSecret.get();
 
