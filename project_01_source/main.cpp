@@ -1,73 +1,81 @@
 #include <iostream>
-#include <cstdint>
-#include <vector>
-#include <random>
-#include <bitset>
-#include <chrono>
+#include <math.h>
+#include <iostream>
 #include <array>
 #include <string>
-#include <iomanip>
-#include <sstream>
 #include <algorithm>
+#include <random>
 #include <stdexcept>
+#include <thread>
+using namespace std;
 
-class BigUInt512 {
+class BigUInt512
+{
 private:
     static const int SIZE = 512 / 64; // Number of 64-bit integers to store 512 bits
-public: 
-    std::array<uint64_t, SIZE> data;
+public:
+    array<uint64_t, SIZE> data;
 
 public:
-    BigUInt512() {
+    BigUInt512()
+    {
         data.fill(0);
     }
 
-    BigUInt512(const std::string& number) {
+    BigUInt512(const string &number)
+    {
         data.fill(0);
         fromString(number);
     }
 
-    void fromString(const std::string& number) {
+    void fromString(const string &number)
+    {
         // Clear existing data
         data.fill(0);
-        
+
         // Input validation
-        if (number.empty()) {
+        if (number.empty())
+        {
             return;
         }
-        
-        for (char c : number) {
-            if (!std::isdigit(c)) {
-                throw std::invalid_argument("Invalid character in number string");
+
+        for (char c : number)
+        {
+            if (!isdigit(c))
+            {
+                throw invalid_argument("Invalid character in number string");
             }
         }
 
         // Process each digit from left to right
-        for (char digit : number) {
+        for (char digit : number)
+        {
             // Multiply current value by 10
             uint64_t carry = 0;
-            for (int i = 0; i < SIZE; i++) {
+            for (int i = 0; i < SIZE; i++)
+            {
                 // Split current number into high and low 32-bits for multiplication
                 uint64_t low = data[i] & 0xFFFFFFFF;
                 uint64_t high = data[i] >> 32;
-                
+
                 // Multiply parts by 10 and combine with previous carry
                 uint64_t result_low = low * 10;
                 uint64_t result_high = high * 10;
-                
+
                 // Add carry from previous iteration
                 result_low += carry;
-                
+
                 // Calculate new carry and combine results
                 carry = result_high + (result_low >> 32);
                 data[i] = ((result_low & 0xFFFFFFFF) | ((carry & 0xFFFFFFFF) << 32));
                 carry >>= 32;
             }
-            
+
             // Add current digit
             carry = digit - '0';
             int i = 0;
-            while (carry && i < SIZE) {
+            while (carry && i < SIZE)
+            {
                 uint64_t sum = data[i] + carry;
                 carry = (sum < data[i]) ? 1 : 0;
                 data[i] = sum;
@@ -76,34 +84,44 @@ public:
         }
     }
 
-    std::string toString() const {
-        std::string result;
+    string toString() const
+    {
+        string result;
         BigUInt512 temp = *this;
-        while (!temp.isZero()) {
+        while (!temp.isZero())
+        {
             uint64_t remainder = temp.divideBy10();
-            result.push_back('0' + remainder);
+            result.push_back('0' + static_cast<char>(remainder));
         }
-        if (result.empty()) {
+        if (result.empty())
+        {
             result = "0";
-        } else {
-            std::reverse(result.begin(), result.end());
+        }
+        else
+        {
+            reverse(result.begin(), result.end());
         }
         return result;
     }
 
-    bool isZero() const {
-        for (const auto& part : data) {
-            if (part != 0) {
+    bool isZero() const
+    {
+        for (const auto &part : data)
+        {
+            if (part != 0)
+            {
                 return false;
             }
         }
         return true;
     }
 
-    BigUInt512 operator+(const BigUInt512& other) const {
+    BigUInt512 operator+(const BigUInt512 &other) const
+    {
         BigUInt512 result;
         uint64_t carry = 0;
-        for (int i = 0; i < SIZE; ++i) {
+        for (int i = 0; i < SIZE; ++i)
+        {
             uint64_t temp = data[i] + other.data[i] + carry;
             carry = (temp < data[i]) ? 1 : 0;
             result.data[i] = temp;
@@ -111,9 +129,11 @@ public:
         return result;
     }
 
-    uint64_t divideBy10() {
+    uint64_t divideBy10()
+    {
         uint64_t remainder = 0;
-        for (int i = SIZE - 1; i >= 0; --i) {
+        for (int i = SIZE - 1; i >= 0; --i)
+        {
             // Handle high 32 bits
             uint64_t high_part = remainder << 32;
             uint64_t temp_high = high_part | (data[i] >> 32);
@@ -132,15 +152,17 @@ public:
         return remainder;
     }
 
-
-    bool isEven() const {
+    bool isEven() const
+    {
         return (data[0] & 1) == 0;
     }
 
-    BigUInt512 subtract(const BigUInt512& other) const {
+    BigUInt512 subtract(const BigUInt512 &other) const
+    {
         BigUInt512 result;
         uint64_t borrow = 0;
-        for (size_t i = 0; i < SIZE; ++i) {
+        for (size_t i = 0; i < SIZE; ++i)
+        {
             uint64_t temp = data[i] - other.data[i] - borrow;
             result.data[i] = temp;
             borrow = (data[i] < other.data[i] + borrow) ? 1 : 0;
@@ -148,38 +170,45 @@ public:
         return result;
     }
 
-    BigUInt512 mod(const BigUInt512& divisor) const {
+    BigUInt512 mod(const BigUInt512 &divisor) const
+    {
         // Check for division by zero
-        if (divisor.isZero()) {
-            throw std::invalid_argument("Modulo by zero");
+        if (divisor.isZero())
+        {
+            throw invalid_argument("Modulo by zero");
         }
 
         BigUInt512 remainder;
-        
+
         // Process each bit from most significant to least significant
-        for (int i = SIZE * 64 - 1; i >= 0; --i) {
+        for (int i = SIZE * 64 - 1; i >= 0; --i)
+        {
             // Shift remainder left by 1 and add next bit
             remainder = remainder << 1;
             remainder.data[0] |= (data[i / 64] >> (i % 64)) & 1;
-            
+
             // If remainder >= divisor, subtract divisor
-            if (remainder >= divisor) {
+            if (remainder >= divisor)
+            {
                 remainder = remainder.subtract(divisor);
             }
         }
-        
+
         return remainder;
     }
 
-    BigUInt512 operator-(const BigUInt512& other) const {
+    BigUInt512 operator-(const BigUInt512 &other) const
+    {
         return subtract(other);
     }
 
-    BigUInt512 operator%(const BigUInt512& divisor) const {
+    BigUInt512 operator%(const BigUInt512 &divisor) const
+    {
         return mod(divisor);
     }
 
-    static void multiply_uint64(uint64_t a, uint64_t b, uint64_t& low, uint64_t& high) {
+    static void multiply_uint64(uint64_t a, uint64_t b, uint64_t &low, uint64_t &high)
+    {
         uint64_t a_low = static_cast<uint32_t>(a);
         uint64_t a_high = a >> 32;
         uint64_t b_low = static_cast<uint32_t>(b);
@@ -195,43 +224,47 @@ public:
         high = high_high + (low_high >> 32) + (high_low >> 32) + (carry >> 32);
     }
 
-    BigUInt512 operator*(const BigUInt512& other) const {
+    BigUInt512 operator*(const BigUInt512 &other) const
+    {
         BigUInt512 result;
-        for (size_t i = 0; i < SIZE; ++i) {
+        for (size_t i = 0; i < SIZE; ++i)
+        {
             uint64_t carry = 0;
-            for (size_t j = 0; j < SIZE - i; ++j) {
+            for (size_t j = 0; j < SIZE - i; ++j)
+            {
                 uint64_t low, high;
                 multiply_uint64(data[i], other.data[j], low, high);
 
-                // Cộng low vào kết quả hiện tại và carry
                 uint64_t sum = result.data[i + j] + low + carry;
                 result.data[i + j] = sum;
 
-                // Xác định carry mới
-                carry = high + (sum < low);  // Xử lý carry do tràn khi cộng
+                carry = high + (sum < low);
             }
         }
         return result;
     }
 
-
-    BigUInt512 operator/(const BigUInt512& divisor) const {
+    BigUInt512 operator/(const BigUInt512 &divisor) const
+    {
         // Check for division by zero
-        if (divisor.isZero()) {
-            throw std::invalid_argument("Division by zero");
+        if (divisor.isZero())
+        {
+            throw invalid_argument("Division by zero");
         }
 
         BigUInt512 quotient;
         BigUInt512 remainder;
 
         // Process each bit from most significant to least significant
-        for (int i = SIZE * 64 - 1; i >= 0; --i) {
+        for (int i = SIZE * 64 - 1; i >= 0; --i)
+        {
             // Shift remainder left by 1 and add next bit from dividend
             remainder = remainder << 1;
             remainder.data[0] |= (data[i / 64] >> (i % 64)) & 1;
 
             // If remainder >= divisor, subtract divisor and set quotient bit
-            if (remainder >= divisor) {
+            if (remainder >= divisor)
+            {
                 remainder = remainder.subtract(divisor);
                 quotient.data[i / 64] |= (uint64_t)1 << (i % 64);
             }
@@ -240,220 +273,112 @@ public:
         return quotient;
     }
 
-    BigUInt512 operator<<(int shift) const {
+    BigUInt512 operator<<(int shift) const
+    {
         BigUInt512 result;
         result.data.fill(0); // Initialize result array to zero
         int chunk_shift = shift / 64;
         int bit_shift = shift % 64;
-        for (int i = SIZE - 1; i >= chunk_shift; --i) {
+        for (int i = SIZE - 1; i >= chunk_shift; --i)
+        {
             result.data[i] = data[i - chunk_shift] << bit_shift;
-            if (i > chunk_shift && bit_shift > 0) {
+            if (i > chunk_shift && bit_shift > 0)
+            {
                 result.data[i] |= data[i - chunk_shift - 1] >> (64 - bit_shift);
             }
         }
         return result;
     }
 
-    BigUInt512 operator>>(int shift) const {
+    BigUInt512 operator>>(int shift) const
+    {
         BigUInt512 result;
         result.data.fill(0); // Initialize result array to zero
         int chunk_shift = shift / 64;
         int bit_shift = shift % 64;
-        for (int i = 0; i < SIZE - chunk_shift; ++i) {
+        for (int i = 0; i < SIZE - chunk_shift; ++i)
+        {
             result.data[i] = data[i + chunk_shift] >> bit_shift;
-            if (i < SIZE - chunk_shift - 1 && bit_shift > 0) {
+            if (i < SIZE - chunk_shift - 1 && bit_shift > 0)
+            {
                 result.data[i] |= data[i + chunk_shift + 1] << (64 - bit_shift);
             }
         }
         return result;
     }
 
-    bool operator==(const BigUInt512& other) const {
-        for (int i = 0; i < SIZE; ++i) {
-            if (data[i] != other.data[i]) return false;
+    bool operator==(const BigUInt512 &other) const
+    {
+        for (int i = 0; i < SIZE; ++i)
+        {
+            if (data[i] != other.data[i])
+                return false;
         }
         return true;
     }
 
-    bool operator!=(const BigUInt512& other) const {
+    bool operator!=(const BigUInt512 &other) const
+    {
         return !(*this == other);
     }
 
-    bool operator>=(const BigUInt512& other) const {
-        for (int i = SIZE - 1; i >= 0; --i) {
-            if (data[i] > other.data[i]) return true;
-            if (data[i] < other.data[i]) return false;
+    bool operator>=(const BigUInt512 &other) const
+    {
+        for (int i = SIZE - 1; i >= 0; --i)
+        {
+            if (data[i] > other.data[i])
+                return true;
+            if (data[i] < other.data[i])
+                return false;
         }
         return true;
     }
 
-    
-
-    bool operator>(const BigUInt512& other) const {
-        for (int i = SIZE - 1; i >= 0; --i) {
-            if (data[i] > other.data[i]) return true;
-            if (data[i] < other.data[i]) return false;
+    bool operator>(const BigUInt512 &other) const
+    {
+        for (int i = SIZE - 1; i >= 0; --i)
+        {
+            if (data[i] > other.data[i])
+                return true;
+            if (data[i] < other.data[i])
+                return false;
         }
         return false;
     }
 
     // Add more arithmetic operations as needed
-    bool isOdd() const {
-        return (data[0] & 1) == 1;  // Kiểm tra bit thấp nhất
-    }
-    void randomize(int bit_size=512) { 
+    void randomize(int bit_size = 512)
+    {
         bit_size = bit_size - 1;
-        std::random_device rd;
-        std::mt19937_64 gen(rd());
-        std::uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
-        
+        random_device rd;
+        mt19937_64 gen(rd());
+        uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
+
         data.fill(0);
         int full_chunks = bit_size / 64;
         int remaining_bits = bit_size % 64;
 
-        for (int i = 0; i < full_chunks; ++i) {
+        for (int i = 0; i < full_chunks; ++i)
+        {
             data[i] = dis(gen);
         }
 
-        if (remaining_bits > 0) {
+        if (remaining_bits > 0)
+        {
             uint64_t mask = (1ULL << remaining_bits) - 1;
             data[full_chunks] = dis(gen) & mask;
         }
     }
 };
 
-
-const BigUInt512 zero("0");
-const BigUInt512 one("1");
-const BigUInt512 two("2");
-
-std::vector<std::string> first_primes = { "2", "3", "5", "7", "11", "13", "17", "19", "23", "29", 
-                                          "31", "37", "41", "43", "47", "53", "59", "61", "67", "71",
-                                          "73", "79", "83", "89", "97", "101", "103",
-                                          "107", "109", "113", "127", "131", "137", "139",
-                                          "149", "151", "157", "163", "167", "173", "179",
-                                          "181", "191", "193", "197", "199", "211", "223",
-                                          "227", "229", "233", "239", "241", "251", "257",
-                                          "263", "269", "271", "277", "281", "283", "293",
-                                          "307", "311", "313", "317", "331", "337", "347", "349" };
-BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m){
-    BigUInt512 res = zero;
-    while (a != zero)
-    {
-        if(a.isOdd()){
-            res = (res + b) % m;
-        }
-        a = a >> 1;
-        b = (b*two) % m;
-    }
-    return res;
-}
-
-BigUInt512 powMod(BigUInt512 a, BigUInt512 b, BigUInt512 n){
-    BigUInt512 x = one;
-    a = a % n;
-    while (b >= one)
-    {
-        if (b%two == one)
-        {
-            x = mulmod(x, a, n);
-            b = b - one;
-        }
-        a = mulmod(a, a, n);
-        b = b >> 1;
-    }
-    return x;
-}
-
-BigUInt512 getLowLevelPrime(int bits_size){
-    while (true)
-    {
-        BigUInt512 candidate;
-        candidate.randomize(bits_size);
-        bool is_prime = true;
-        for (int i = 0; i < first_primes.size(); i++)
-        {
-            BigUInt512 prime(first_primes[i]);
-            if (candidate == prime)
-                return candidate;
-
-            if(candidate % prime == zero){
-                is_prime = false;
-                break;
-            } 
-        }
-        if (is_prime)
-            return candidate;
-    }
-}
-
-bool trialComposite(BigUInt512 a, BigUInt512 d, BigUInt512 n, int s) {
-    BigUInt512 x = powMod(a, d, n);
-    if (x == one || x == n - one) {
-        return false; // Not composite
-    }
-    for (int r = 1; r < s; ++r) {
-        x = mulmod(x, x, n);
-        if (x == n - one) return false; // Not composite
-    }
-    return true; // Composite
-}
-
-bool isProbablePrime(BigUInt512 n, int rounds = 5) {
-    if (!(n >= two)) return false;
-    if (n == two || n == BigUInt512("3")) return true;
-    if (n.isEven()) return false;
-
-    // Write (n - 1) as d * 2^s
-    BigUInt512 d = n - one;
-    int s = 0;
-
-    while (d.isEven()) {
-        d = d >> 1;
-        s++;
-    }
-
-    // Perform rounds of Miller-Rabin primality test
-    std::random_device rd;
-    std::mt19937_64 gen(rd());
-    std::uniform_int_distribution<uint64_t> dist(2, 0xFFFFFFFFFFFFFFFF);
-
-    for (int i = 0; i < rounds; ++i) {
-        BigUInt512 a;
-        a.randomize();
-        a = a % (n-two) + two;
-        if (trialComposite(a, d, n, s)) {
-            return false; // Composite
-        }
-    }
-    return true; // Probably prime
-}
-
-
-BigUInt512 getBigPrime(int bits_size){
-    while (true)
-    {
-        BigUInt512 candidate = getLowLevelPrime(bits_size);
-        if(isProbablePrime(candidate))
-            return candidate;
-    }
-}
-
-
-BigUInt512 generate_safe_prime(int bit_size) {
-  while (true) {
-    BigUInt512 p = getBigPrime(bit_size);
-    BigUInt512 q = (p - one) / two;
-    if (isProbablePrime(q))
-      return q;
-  }
-}
-
-BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const BigUInt512& mod) {
+BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const BigUInt512 &mod)
+{
     BigUInt512 result("1");
     base = base % mod;
-    while (!exponent.isZero()) {
-        if (exponent.data[0] & 1) {
+    while (!exponent.isZero())
+    {
+        if (exponent.data[0] & 1)
+        {
             result = (result * base) % mod;
         }
         exponent = exponent >> 1;
@@ -462,26 +387,153 @@ BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const Bi
     return result;
 }
 
+const BigUInt512 zero("0");
+const BigUInt512 one("1");
+const BigUInt512 two("2");
 
+vector<string> first_primes = {"2", "3", "5", "7", "11", "13", "17", "19", "23", "29",
+                               "31", "37", "41", "43", "47", "53", "59", "61", "67", "71",
+                               "73", "79", "83", "89", "97", "101", "103",
+                               "107", "109", "113", "127", "131", "137", "139",
+                               "149", "151", "157", "163", "167", "173", "179",
+                               "181", "191", "193", "197", "199", "211", "223",
+                               "227", "229", "233", "239", "241", "251", "257",
+                               "263", "269", "271", "277", "281", "283", "293",
+                               "307", "311", "313", "317", "331", "337", "347", "349"};
 
-BigUInt512 gcd(const BigUInt512& a, const BigUInt512& b) {
-    if (b.isZero()) return a;
+BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m)
+{
+    BigUInt512 res = zero;
+    while (a != zero)
+    {
+        if (!a.isEven())
+        {
+            res = (res + b) % m;
+        }
+        a = a >> 1;
+        b = (b * two) % m;
+    }
+    return res;
+}
+BigUInt512 getLowLevelPrime(int bit_size)
+{
+    while (true)
+    {
+        BigUInt512 candidate;
+        candidate.randomize(bit_size);
+        bool is_prime = true;
+        for (int i = 0; i < first_primes.size(); i++)
+        {
+            BigUInt512 prime(first_primes[i]);
+            if (candidate == prime)
+                return candidate;
+
+            if (candidate % prime == zero)
+            {
+                is_prime = false;
+                break;
+            }
+        }
+        if (is_prime)
+            return candidate;
+    }
+}
+
+bool trialComposite(BigUInt512 a, BigUInt512 d, BigUInt512 n, int s)
+{
+    BigUInt512 x = modular_exponentiation(a, d, n);
+    if (x == one || x == n - one)
+    {
+        return false; // Not composite
+    }
+    for (int r = 1; r < s; ++r)
+    {
+        x = mulmod(x, x, n);
+        if (x == n - one)
+            return false; // Not composite
+    }
+    return true; // Composite
+}
+
+bool isProbablePrime(BigUInt512 n, int rounds = 5)
+{
+    if (!(n >= two))
+        return false;
+    if (n == two || n == BigUInt512("3"))
+        return true;
+    if (n.isEven())
+        return false;
+
+    // Write (n - 1) as d * 2^s
+    BigUInt512 d = n - one;
+    int s = 0;
+    while (d.isEven())
+    {
+        d = d >> 1;
+        s++;
+    }
+
+    // Perform rounds of Miller-Rabin primality test
+    random_device rd;
+    mt19937_64 gen(rd());
+    uniform_int_distribution<uint64_t> dist(2, 0xFFFFFFFFFFFFFFFF);
+
+    for (int i = 0; i < rounds; ++i)
+    {
+        BigUInt512 a;
+        a.randomize();
+        a = a % (n - two) + two;
+        if (trialComposite(a, d, n, s))
+        {
+            return false; // Composite
+        }
+    }
+    return true; // Probably prime
+}
+
+BigUInt512 getBigPrime(int bit_size)
+{
+    while (true)
+    {
+        BigUInt512 candidate = getLowLevelPrime(bit_size);
+        if (isProbablePrime(candidate))
+            return candidate;
+    }
+}
+
+BigUInt512 generate_safe_prime(int bit_size)
+{
+    while (true)
+    {
+        BigUInt512 p = getBigPrime(bit_size);
+        BigUInt512 q = (p - one) / two;
+        if (isProbablePrime(q))
+            return p;
+    }
+}
+
+BigUInt512 gcd(const BigUInt512 &a, const BigUInt512 &b)
+{
+    if (b.isZero())
+        return a;
     return gcd(b, a % b);
 }
 
-
-BigUInt512 pollardsRhoFunction(const BigUInt512& x, const BigUInt512& n) {
+BigUInt512 pollardsRhoFunction(const BigUInt512 &x, const BigUInt512 &n)
+{
     return (x * x + BigUInt512("1")) % n;
 }
 
-
-BigUInt512 pollardsRho(const BigUInt512& n) {
-    if (n.isEven()) return BigUInt512("2"); 
+BigUInt512 pollardsRho(const BigUInt512 &n)
+{
+    if (n.isEven())
+        return BigUInt512("2");
 
     BigUInt512 x("2"), y("2"), d("1");
-    
-    while (d == BigUInt512("1")) {
-        
+
+    while (d == BigUInt512("1"))
+    {
+
         x = pollardsRhoFunction(x, n);
         y = pollardsRhoFunction(pollardsRhoFunction(y, n), n);
         d = gcd((x > y ? x - y : y - x), n);
@@ -489,32 +541,31 @@ BigUInt512 pollardsRho(const BigUInt512& n) {
     return d;
 }
 
-
-std::vector<BigUInt512> factorize(const BigUInt512& n) {
-    std::vector<BigUInt512> factors;
+vector<BigUInt512> factorize(const BigUInt512 &n)
+{
+    vector<BigUInt512> factors;
     BigUInt512 num = n;
-    
-    
+
     BigUInt512 two("2");
-    while (num.isEven()) {
+    while (num.isEven())
+    {
         factors.push_back(two);
         num = num / two;
-        
     }
 
-    
-    
-    if (num > BigUInt512("1")) {
-        std::vector<BigUInt512> stack = {num};
-        while (!stack.empty()) {
+    if (num > BigUInt512("1"))
+    {
+        vector<BigUInt512> stack = {num};
+        while (!stack.empty())
+        {
             BigUInt512 curr = stack.back();
             stack.pop_back();
 
-            if (isProbablePrime(curr)) {
+            if (isProbablePrime(curr))
+            {
                 factors.push_back(curr);
-                //std::cout << curr.toString() << std::endl;
+                // cout << curr.toString() << endl;
                 continue;
-                
             }
 
             BigUInt512 divisor = pollardsRho(curr);
@@ -526,67 +577,98 @@ std::vector<BigUInt512> factorize(const BigUInt512& n) {
     return factors;
 }
 
-BigUInt512 findGenerator(const BigUInt512& p) {
+BigUInt512 findGenerator(const BigUInt512 &p)
+{
     BigUInt512 one("1");
     BigUInt512 two("2");
     BigUInt512 p_minus_1 = p - one;
 
-    std::vector<BigUInt512> factors = factorize(p_minus_1);
-    
+    vector<BigUInt512> factors = factorize(p_minus_1);
 
-    while (true) {
+    while (true)
+    {
         BigUInt512 x;
-        x.randomize(512);
-        x = x % (p - two) + two; 
+        x.randomize();
+        x = x % (p - two) + two;
 
         bool isGenerator = true;
-        for (const auto& factor : factors) {
+        for (const auto &factor : factors)
+        {
             BigUInt512 z = p_minus_1 / factor;
 
-            if (modular_exponentiation(x, z, p) == one) {
+            if (modular_exponentiation(x, z, p) == one)
+            {
                 isGenerator = false;
                 break;
-
             }
         }
 
-        if (isGenerator) {
+        if (isGenerator)
+        {
             return x;
         }
     }
 }
 
-BigUInt512 generatePrivateKey(const BigUInt512& p) {
+BigUInt512 generatePrivateKey(const BigUInt512 &p)
+{
     BigUInt512 two("2");
     BigUInt512 x;
-    x.randomize(512);
+    x.randomize();
     x = x % (p - two) + two;
-    return x;        
+    return x;
 }
 
-int main() {
-    int bit_size = 256; // You can change this to any bit size you need
-    BigUInt512 prime = generate_safe_prime(bit_size);
-    //BigUInt512 g ;
-    //std::cout << "Random Number: " << g.toString() << std::endl;
-    std::cout << "Random Prime Number: " << prime.toString() << std::endl;
-    //std::vector<BigUInt512> factors = factorize(prime - one);
-    //for (int i = 0; i < factors.size(); i++)
-    //    std::cout << factors[i].toString() << std::endl;
-    BigUInt512 g = findGenerator(prime);
-    std::cout << g.toString() << std::endl;
+int main()
+{
+    int bit_size = 512;
+    BigUInt512 prime, g, a, b, A, B, AliceSecret, BobSecret;
 
-    BigUInt512 a = generatePrivateKey(prime);
-    BigUInt512 b = generatePrivateKey(prime);
+    thread thread1([&]()
+                   { prime = generate_safe_prime(bit_size); });
+    thread1.join();
 
-    BigUInt512 A = modular_exponentiation(g, a, prime);
-    BigUInt512 B = modular_exponentiation(g, b, prime);
+    thread thread2([&]()
+                   { g = findGenerator(prime); });
+    thread2.join();
 
-    BigUInt512 AliceSecret = modular_exponentiation(B, a, prime);
-    BigUInt512 BobSecret = modular_exponentiation(A, b, prime);
+    thread thread3([&]()
+                   { a = generatePrivateKey(prime); });
+    thread thread4([&]()
+                   { b = generatePrivateKey(prime); });
+    thread3.join();
+    thread4.join();
 
-    std::cout << "Bi mat cua Alice: " << AliceSecret.toString() << std::endl;
-    std::cout << "Bi mat cua Bob: " << BobSecret.toString() << std::endl;
-    std::cout << "Qua trinh tinh toan co dung khong? " << (AliceSecret == BobSecret) << std::endl;
+    BigUInt512 tempA, tempB;
+    thread thread5([&]()
+                   { tempA = modular_exponentiation(g, a, prime); });
+    thread thread6([&]()
+                   { tempB = modular_exponentiation(g, b, prime); });
+    thread5.join();
+    thread6.join();
+
+    A = tempA;
+    B = tempB;
+
+    BigUInt512 tempAliceSecret, tempBobSecret;
+    thread thread7([&]()
+                   { tempAliceSecret = modular_exponentiation(B, a, prime); });
+    thread thread8([&]()
+                   { tempBobSecret = modular_exponentiation(A, b, prime); });
+    thread7.join();
+    thread8.join();
+
+    AliceSecret = tempAliceSecret;
+    BobSecret = tempBobSecret;
+
+    cout << "Safe Prime: " << prime.toString() << endl;
+    cout << "Generator (g): " << g.toString() << endl;
+    cout << "Public Key of Alice (A): " << A.toString() << endl;
+    cout << "Public Key of Bob (B): " << B.toString() << endl;
+    cout << "Secret Key of Alice: " << AliceSecret.toString() << endl;
+    cout << "Secret Key of Bob: " << BobSecret.toString() << endl;
+    cout << "Are the secret keys equal? " << (AliceSecret == BobSecret ? "Yes" : "No") << endl;
+
+    
     return 0;
 }
