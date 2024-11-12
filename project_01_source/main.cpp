@@ -387,11 +387,12 @@ BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const Bi
     }
     return result;
 }
-
+// Khởi tạo các hằng số zero, one và two, được dùng trong các phép toán với số nguyên lớn
 const BigUInt512 zero("0");
 const BigUInt512 one("1");
 const BigUInt512 two("2");
 
+// Danh sách các số nguyên tố nhỏ được dùng trong hàm getLowLevelPrime để kiểm tra tính nguyên tố sơ bộ
 vector<string> first_primes = {"2", "3", "5", "7", "11", "13", "17", "19", "23", "29",
                                "31", "37", "41", "43", "47", "53", "59", "61", "67", "71",
                                "73", "79", "83", "89", "97", "101", "103",
@@ -401,59 +402,72 @@ vector<string> first_primes = {"2", "3", "5", "7", "11", "13", "17", "19", "23",
                                "227", "229", "233", "239", "241", "251", "257",
                                "263", "269", "271", "277", "281", "283", "293",
                                "307", "311", "313", "317", "331", "337", "347", "349"};
+
+// Hàm mulmod tính (a * b) % m một cách an toàn với các số lớn
 BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m)
 {
     BigUInt512 result = zero;
+    // Thực hiện phép nhân lũy thừa qua từng bit của b
     while (b > zero)
     {
+        // Nếu bit cuối của b là 1, thêm a vào kết quả
         if (!b.isEven())
         {
             result = (result + a) % m;
         }
+        // Nhân đôi a và dịch b sang phải
         a = (a * two) % m;
         b = b >> 1;
     }
     return result;
 }
 
+// Hàm getLowLevelPrime tạo số nguyên lớn có số bit chỉ định và kiểm tra tính nguyên tố sơ bộ
 BigUInt512 getLowLevelPrime(int bit_size)
 {
     while (true)
     {
         BigUInt512 candidate;
-        candidate.randomize(bit_size);
+        candidate.randomize(bit_size); // Khởi tạo số ngẫu nhiên với bit_size
+
         bool is_prime = true;
+        // Kiểm tra tính nguyên tố của candidate với các số nguyên tố nhỏ trong first_primes
         for (int i = 0; i < first_primes.size(); i++)
         {
             BigUInt512 prime(first_primes[i]);
+
+            // Nếu candidate trùng với một số trong first_primes, trả về candidate
             if (candidate == prime)
                 return candidate;
 
+            // Nếu candidate chia hết cho bất kỳ số nào trong first_primes, không phải số nguyên tố
             if (candidate % prime == zero)
             {
                 is_prime = false;
                 break;
             }
         }
+        // Nếu vượt qua kiểm tra, candidate có thể là số nguyên tố
         if (is_prime)
             return candidate;
     }
 }
 
+// Hàm trialComposite kiểm tra tính hợp lệ của một số khi thực hiện kiểm tra Miller-Rabin
 bool trialComposite(BigUInt512 a, BigUInt512 d, BigUInt512 n, int s)
 {
-    BigUInt512 x = modular_exponentiation(a, d, n);
+    BigUInt512 x = modular_exponentiation(a, d, n); // Tính a^d % n
     if (x == one || x == n - one)
     {
-        return false; // Not composite
+        return false; // Nếu x là 1 hoặc n - 1, không phải là hợp số
     }
     for (int r = 1; r < s; ++r)
     {
-        x = mulmod(x, x, n);
+        x = mulmod(x, x, n); // Tính x^2 % n
         if (x == n - one)
-            return false; // Not composite
+            return false; // Nếu x trở thành n - 1, không phải là hợp số
     }
-    return true; // Composite
+    return true; // Nếu không tìm thấy giá trị n - 1, n là hợp số
 }
 
 bool isProbablePrime(BigUInt512 n, int rounds = 5)
@@ -559,12 +573,12 @@ BigUInt512 gcd(const BigUInt512 &a, const BigUInt512 &b)
         return a;
     return gcd(b, a % b);
 }
-
+// Hàm tính toán giá trị tuần hoàn (x * x + 1) % n cho thuật toán Pollard's Rho
 BigUInt512 pollardsRhoFunction(const BigUInt512 &x, const BigUInt512 &n)
 {
     return (x * x + BigUInt512("1")) % n;
 }
-
+// Hàm sử dụng thuật toán Pollard's Rho để tìm một ước số nguyên tố của n
 BigUInt512 pollardsRho(const BigUInt512 &n)
 {
     if (n.isEven())
