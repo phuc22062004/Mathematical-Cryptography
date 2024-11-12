@@ -7,6 +7,8 @@
 #include <random>
 #include <stdexcept>
 #include <thread>
+#include <future>
+#include <vector>
 using namespace std;
 
 class BigUInt512
@@ -22,13 +24,13 @@ public:
         data.fill(0);
     }
 
-    BigUInt512(const string &number)
+    BigUInt512(const string& number)
     {
         data.fill(0);
         fromString(number);
     }
 
-    void fromString(const string &number)
+    void fromString(const string& number)
     {
         // Clear existing data
         data.fill(0);
@@ -106,7 +108,7 @@ public:
 
     bool isZero() const
     {
-        for (const auto &part : data)
+        for (const auto& part : data)
         {
             if (part != 0)
             {
@@ -116,7 +118,7 @@ public:
         return true;
     }
 
-    BigUInt512 operator+(const BigUInt512 &other) const
+    BigUInt512 operator+(const BigUInt512& other) const
     {
         BigUInt512 result;
         uint64_t carry = 0;
@@ -157,7 +159,7 @@ public:
         return (data[0] & 1) == 0;
     }
 
-    BigUInt512 subtract(const BigUInt512 &other) const
+    BigUInt512 subtract(const BigUInt512& other) const
     {
         BigUInt512 result;
         uint64_t borrow = 0;
@@ -170,7 +172,7 @@ public:
         return result;
     }
 
-    BigUInt512 mod(const BigUInt512 &divisor) const
+    BigUInt512 mod(const BigUInt512& divisor) const
     {
         // Check for division by zero
         if (divisor.isZero())
@@ -197,17 +199,17 @@ public:
         return remainder;
     }
 
-    BigUInt512 operator-(const BigUInt512 &other) const
+    BigUInt512 operator-(const BigUInt512& other) const
     {
         return subtract(other);
     }
 
-    BigUInt512 operator%(const BigUInt512 &divisor) const
+    BigUInt512 operator%(const BigUInt512& divisor) const
     {
         return mod(divisor);
     }
 
-    static void multiply_uint64(uint64_t a, uint64_t b, uint64_t &low, uint64_t &high)
+    static void multiply_uint64(uint64_t a, uint64_t b, uint64_t& low, uint64_t& high)
     {
         uint64_t a_low = static_cast<uint32_t>(a);
         uint64_t a_high = a >> 32;
@@ -224,7 +226,7 @@ public:
         high = high_high + (low_high >> 32) + (high_low >> 32) + (carry >> 32);
     }
 
-    BigUInt512 operator*(const BigUInt512 &other) const
+    BigUInt512 operator*(const BigUInt512& other) const
     {
         BigUInt512 result;
         for (size_t i = 0; i < SIZE; ++i)
@@ -244,7 +246,7 @@ public:
         return result;
     }
 
-    BigUInt512 operator/(const BigUInt512 &divisor) const
+    BigUInt512 operator/(const BigUInt512& divisor) const
     {
         // Check for division by zero
         if (divisor.isZero())
@@ -307,7 +309,7 @@ public:
         return result;
     }
 
-    bool operator==(const BigUInt512 &other) const
+    bool operator==(const BigUInt512& other) const
     {
         for (int i = 0; i < SIZE; ++i)
         {
@@ -317,12 +319,12 @@ public:
         return true;
     }
 
-    bool operator!=(const BigUInt512 &other) const
+    bool operator!=(const BigUInt512& other) const
     {
         return !(*this == other);
     }
 
-    bool operator>=(const BigUInt512 &other) const
+    bool operator>=(const BigUInt512& other) const
     {
         for (int i = SIZE - 1; i >= 0; --i)
         {
@@ -334,7 +336,7 @@ public:
         return true;
     }
 
-    bool operator>(const BigUInt512 &other) const
+    bool operator>(const BigUInt512& other) const
     {
         for (int i = SIZE - 1; i >= 0; --i)
         {
@@ -371,18 +373,17 @@ public:
     }
 };
 
-BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const BigUInt512 &mod)
+BigUInt512 modular_exponentiation(BigUInt512 base, BigUInt512 exponent, const BigUInt512& mod)
 {
     BigUInt512 result("1");
-    base = base % mod;
     while (!exponent.isZero())
     {
-        if (exponent.data[0] & 1)
+        if (!exponent.isEven())
         {
             result = (result * base) % mod;
         }
-        exponent = exponent >> 1;
         base = (base * base) % mod;
+        exponent = exponent >> 1;
     }
     return result;
 }
@@ -391,7 +392,7 @@ const BigUInt512 zero("0");
 const BigUInt512 one("1");
 const BigUInt512 two("2");
 
-vector<string> first_primes = {"2", "3", "5", "7", "11", "13", "17", "19", "23", "29",
+vector<string> first_primes = { "2", "3", "5", "7", "11", "13", "17", "19", "23", "29",
                                "31", "37", "41", "43", "47", "53", "59", "61", "67", "71",
                                "73", "79", "83", "89", "97", "101", "103",
                                "107", "109", "113", "127", "131", "137", "139",
@@ -399,21 +400,22 @@ vector<string> first_primes = {"2", "3", "5", "7", "11", "13", "17", "19", "23",
                                "181", "191", "193", "197", "199", "211", "223",
                                "227", "229", "233", "239", "241", "251", "257",
                                "263", "269", "271", "277", "281", "283", "293",
-                               "307", "311", "313", "317", "331", "337", "347", "349"};
+                               "307", "311", "313", "317", "331", "337", "347", "349" };
 BigUInt512 mulmod(BigUInt512 a, BigUInt512 b, BigUInt512 m)
 {
-    BigUInt512 res = zero;
-    while (a != zero)
+    BigUInt512 result = zero;
+    while (b > zero)
     {
-        if (!a.isEven())
+        if (!b.isEven())
         {
-            res = (res + b) % m;
+            result = (result + a) % m;
         }
-        a = a >> 1;
-        b = (b * two) % m;
+        a = (a * two) % m;
+        b = b >> 1;
     }
-    return res;
+    return result;
 }
+
 BigUInt512 getLowLevelPrime(int bit_size)
 {
     while (true)
@@ -511,19 +513,19 @@ BigUInt512 generate_safe_prime(int bit_size)
     }
 }
 
-BigUInt512 gcd(const BigUInt512 &a, const BigUInt512 &b)
+BigUInt512 gcd(const BigUInt512& a, const BigUInt512& b)
 {
     if (b.isZero())
         return a;
     return gcd(b, a % b);
 }
 
-BigUInt512 pollardsRhoFunction(const BigUInt512 &x, const BigUInt512 &n)
+BigUInt512 pollardsRhoFunction(const BigUInt512& x, const BigUInt512& n)
 {
     return (x * x + BigUInt512("1")) % n;
 }
 
-BigUInt512 pollardsRho(const BigUInt512 &n)
+BigUInt512 pollardsRho(const BigUInt512& n)
 {
     if (n.isEven())
         return BigUInt512("2");
@@ -540,7 +542,7 @@ BigUInt512 pollardsRho(const BigUInt512 &n)
     return d;
 }
 
-vector<BigUInt512> factorize(const BigUInt512 &n)
+vector<BigUInt512> factorize(const BigUInt512& n)
 {
     vector<BigUInt512> factors;
     BigUInt512 num = n;
@@ -554,7 +556,7 @@ vector<BigUInt512> factorize(const BigUInt512 &n)
 
     if (num > BigUInt512("1"))
     {
-        vector<BigUInt512> stack = {num};
+        vector<BigUInt512> stack = { num };
         while (!stack.empty())
         {
             BigUInt512 curr = stack.back();
@@ -576,7 +578,7 @@ vector<BigUInt512> factorize(const BigUInt512 &n)
     return factors;
 }
 
-BigUInt512 findGenerator(const BigUInt512 &p)
+BigUInt512 findGenerator(const BigUInt512& p)
 {
     BigUInt512 one("1");
     BigUInt512 two("2");
@@ -591,7 +593,7 @@ BigUInt512 findGenerator(const BigUInt512 &p)
         x = x % (p - two) + two;
 
         bool isGenerator = true;
-        for (const auto &factor : factors)
+        for (const auto& factor : factors)
         {
             BigUInt512 z = p_minus_1 / factor;
 
@@ -609,7 +611,7 @@ BigUInt512 findGenerator(const BigUInt512 &p)
     }
 }
 
-BigUInt512 generatePrivateKey(const BigUInt512 &p)
+BigUInt512 generatePrivateKey(const BigUInt512& p)
 {
     BigUInt512 two("2");
     BigUInt512 x;
@@ -623,42 +625,35 @@ int main()
     int bit_size = 512;
     BigUInt512 prime, g, a, b, A, B, AliceSecret, BobSecret;
 
-    thread thread1([&]()
-                   { prime = generate_safe_prime(bit_size); });
-    thread1.join();
+    // Sử dụng std::async cho các tác vụ song song
+    auto future_prime = async(launch::async, [&]()
+        { return generate_safe_prime(bit_size); });
+    prime = future_prime.get();
 
-    thread thread2([&]()
-                   { g = findGenerator(prime); });
-    thread2.join();
+    auto future_g = async(launch::async, [&]()
+        { return findGenerator(prime); });
+    g = future_g.get();
 
-    thread thread3([&]()
-                   { a = generatePrivateKey(prime); });
-    thread thread4([&]()
-                   { b = generatePrivateKey(prime); });
-    thread3.join();
-    thread4.join();
+    auto future_a = async(launch::async, [&]()
+        { return generatePrivateKey(prime); });
+    auto future_b = async(launch::async, [&]()
+        { return generatePrivateKey(prime); });
+    a = future_a.get();
+    b = future_b.get();
 
-    BigUInt512 tempA, tempB;
-    thread thread5([&]()
-                   { tempA = modular_exponentiation(g, a, prime); });
-    thread thread6([&]()
-                   { tempB = modular_exponentiation(g, b, prime); });
-    thread5.join();
-    thread6.join();
+    auto future_A = async(launch::async, [&]()
+        { return modular_exponentiation(g, a, prime); });
+    auto future_B = async(launch::async, [&]()
+        { return modular_exponentiation(g, b, prime); });
+    A = future_A.get();
+    B = future_B.get();
 
-    A = tempA;
-    B = tempB;
-
-    BigUInt512 tempAliceSecret, tempBobSecret;
-    thread thread7([&]()
-                   { tempAliceSecret = modular_exponentiation(B, a, prime); });
-    thread thread8([&]()
-                   { tempBobSecret = modular_exponentiation(A, b, prime); });
-    thread7.join();
-    thread8.join();
-
-    AliceSecret = tempAliceSecret;
-    BobSecret = tempBobSecret;
+    auto future_AliceSecret = async(launch::async, [&]()
+        { return modular_exponentiation(B, a, prime); });
+    auto future_BobSecret = async(launch::async, [&]()
+        { return modular_exponentiation(A, b, prime); });
+    AliceSecret = future_AliceSecret.get();
+    BobSecret = future_BobSecret.get();
 
     cout << "Safe Prime: " << prime.toString() << endl;
     cout << "Generator (g): " << g.toString() << endl;
@@ -668,6 +663,5 @@ int main()
     cout << "Secret Key of Bob: " << BobSecret.toString() << endl;
     cout << "Are the secret keys equal? " << (AliceSecret == BobSecret ? "Yes" : "No") << endl;
 
-    return 0;
     return 0;
 }
