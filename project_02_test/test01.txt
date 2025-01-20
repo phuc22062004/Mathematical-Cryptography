@@ -1,0 +1,1 @@
+Đây là phần ghi chú được đọc từ file txt lên.
