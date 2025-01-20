@@ -9,7 +9,7 @@ def main():
         # note = "Đây là ghi chú cần bảo mật." # Note này có thể thay đổi bằng cách đọc string
         
         # Read file content
-        file_path = "./project_02_test/test01.txt"  
+        file_path = "./project_02_test/test03.pdf"  
         note = read_file(file_path)
         
         # Test encryption and decryption
