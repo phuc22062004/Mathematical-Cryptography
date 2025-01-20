@@ -9,7 +9,7 @@ def main():
         # note = "Đây là ghi chú cần bảo mật." # Note này có thể thay đổi bằng cách đọc string
         
         # Read file content
-        file_path = "./project_02_test/test03.pdf"  
+        file_path = "./project_02_test/test02.docx"  
         note = read_file(file_path)
         
         # Test encryption and decryption
@@ -24,3 +24,4 @@ def main():
         
 if __name__ == "__main__":
     main()
+    

@@ -24,8 +24,13 @@ def read_file(file_path):
         elif file_ext == '.docx':
             doc = Document(file_path)
             text = ''
-            for paragraph in doc.paragraphs:
-                text += paragraph.text + '\n'
+            paragraphs = doc.paragraphs
+            for i, paragraph in enumerate(paragraphs):
+                if paragraph.text.strip():  # Only process non-empty paragraphs
+                    text += paragraph.text
+                    # Add newline only if it's not the last paragraph
+                    if i < len(paragraphs) - 1:
+                        text += '\n'
             return text
             
         # Read TXT files
