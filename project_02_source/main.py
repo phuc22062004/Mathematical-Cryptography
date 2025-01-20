@@ -1,11 +1,16 @@
 from note_en_de import *
+from note_reading import *
 
 def main():
     try:
         keyBytes = 32 # 256-bit key
         key = os.urandom(keyBytes)  # Generate random key
         # print(f"Key: {key}")
-        note = "Đây là ghi chú cần bảo mật." # Note này có thể thay đổi bằng cách đọc string
+        # note = "Đây là ghi chú cần bảo mật." # Note này có thể thay đổi bằng cách đọc string
+        
+        # Read file content
+        file_path = "./project_02_test/test01.txt"  
+        note = read_file(file_path)
         
         # Test encryption and decryption
         encrypted = encrypt_note(note, key)
